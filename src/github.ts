@@ -1,36 +1,46 @@
-import { Octokit, App } from "https://cdn.skypack.dev/octokit?dts";
-
-const octokit = new Octokit({auth: Deno.env.get("GITHUB_PERSONAL_ACCESS_TOKEN")});
+const AUTH_TOKEN = Deno.env.get("GITHUB_PERSONAL_ACCESS_TOKEN");
 
 const REPOSITORY_OWNER = "hiromitsusasaki"
-const REPOSITORY_NAME = "sharinglist_rails"
+const REPOSITORY_NAME = "slackbot_for_devteam"
 
 const WAIT_FOR_RELEASE = "リリース待ち"
 const READY_FOR_REVIEW= "レビュー依頼"
 
+const GetPulls = async () => {
+  const apiUrl = "https://api.github.com"
+  const apiResource = `repos/${REPOSITORY_OWNER}/${REPOSITORY_NAME}/pulls`
+
+  const requestUrl = `${apiUrl}/${apiResource}`
+  const headers = {
+    "Accept": "application/vnd.github+json",
+    "Authorization": `Bearer ${AUTH_TOKEN}`,
+    "X-GitHub-Api-Version": "2022-11-28"
+  }
+
+  const req = new Request(requestUrl, { headers: headers })
+  const res = await fetch(req);
+  return await res.json();
+}
 
 export const RemindGithubPrReview = async () => {
-  const { data: pullRequests } = await octokit.rest.pulls.list({
-    owner: REPOSITORY_OWNER,
-    repo: REPOSITORY_NAME,
-    state: 'open',
-  });
 
-  const readyForReviewPullRequests = [];
+  const pullRequests = await GetPulls();
 
-  pullRequests.forEach((pullRequest) => {
-    if (pullRequest.labels.map((label) => label.name).includes(READY_FOR_REVIEW)) {
+  const readyForReviewPullRequests: any[] = [];
+
+  pullRequests.forEach((pullRequest: { labels: any[]; }) => {
+    if (pullRequest.labels.map((label: { name: any; }) => label.name).includes(READY_FOR_REVIEW)) {
       readyForReviewPullRequests.push(pullRequest);
     }
   });
 
-  const results = [];
+  const results: { title: any; url: any; reviewers: any; }[] = [];
 
   readyForReviewPullRequests.forEach((pullRequest) => {
     results.push({
       title: pullRequest.title,
       url: pullRequest.html_url,
-      assignees: pullRequest.assignees.map((assignee) => assignee.login),
+      reviewers: pullRequest.requested_reviewers.map((requested_reviewer: { login: any; }) => requested_reviewer.login),
     })
   });
 
@@ -38,27 +48,22 @@ export const RemindGithubPrReview = async () => {
 }
 
 export const RemindGithubPrWaitForRelease = async () => {
-  const { data: pullRequests } = await octokit.rest.pulls.list({
-    owner: REPOSITORY_OWNER,
-    repo: REPOSITORY_NAME,
-    state: 'open',
-  });
+  const pullRequests = await GetPulls();
+  const waitForReleasePullRequests: any[] = [];
 
-  const waitForReleasePullRequests = [];
-
-  pullRequests.forEach((pullRequest) => {
-    if (pullRequest.labels.map((label) => label.name).includes(WAIT_FOR_RELEASE)) {
+  pullRequests.forEach((pullRequest: { labels: any[]; }) => {
+    if (pullRequest.labels.map((label: { name: any; }) => label.name).includes(WAIT_FOR_RELEASE)) {
       waitForReleasePullRequests.push(pullRequest);
     }
   });
 
-  const results = [];
+  const results: { title: any; url: any; assignees: any; }[] = [];
 
   waitForReleasePullRequests.forEach((pullRequest) => {
     results.push({
       title: pullRequest.title,
       url: pullRequest.html_url,
-      assignees: pullRequest.assignees.map((assignee) => assignee.login),
+      assignees: pullRequest.assignees.map((assignee: { login: any; }) => assignee.login),
     })
   });
 
