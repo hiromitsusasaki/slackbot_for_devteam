@@ -1,23 +1,16 @@
 import { Manifest } from "deno-slack-sdk/mod.ts";
-import SampleWorkflow from "./workflows/sample_workflow.ts";
-import SampleObjectDatastore from "./datastores/sample_datastore.ts";
+import RemindGithubPrsWorkflow from "./workflows/remind_github_prs_workflow.ts";
 
-
-/**
- * The app manifest contains the app's configuration. This
- * file defines attributes like app name and description.
- * https://api.slack.com/future/manifest
- */
 export default Manifest({
   name: "slackbot_for_devteam",
   description: "Useful chatbot for devteam on Slack",
   icon: "assets/default_new_app_icon.png",
-  workflows: [SampleWorkflow, RemindGithubPrReview],
-  outgoingDomains: [],
-  datastores: [SampleObjectDatastore],
+  workflows: [RemindGithubPrsWorkflow],
+  outgoingDomains: ["github.com", "api.github.com"],
   botScopes: [
     "commands",
     "chat:write",
     "chat:write.public",
+    "app_mentions:read",
   ],
 });
